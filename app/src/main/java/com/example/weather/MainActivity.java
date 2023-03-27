@@ -1,12 +1,15 @@
 package com.example.weather;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Criteria;
@@ -15,6 +18,7 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.media.Image;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -78,10 +82,14 @@ public class MainActivity extends AppCompatActivity {
         weatherRvAdapter=new WeatherRvAdapter(this,watherRvModelArrayList);
         weatherRv.setAdapter(weatherRvAdapter);
         locationManager=(LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+
         if(ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.ACCESS_COARSE_LOCATION)!=PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},PERMISSION_CODE);
         }
-        Location location=locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        if(locationManager.isProviderEnabled(locationManager.GPS_PROVIDER)){
+            Toast.makeText(this, "Location is on", Toast.LENGTH_SHORT).show();
+            Location location=locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 //        criteria=new Criteria();
 //        bestProvider=String.valueOf(locationManager.getBestProvider(criteria,true)).toString();
 //        Location location=locationManager.getLastKnownLocation(bestProvider);
@@ -90,13 +98,20 @@ public class MainActivity extends AppCompatActivity {
 //            latitude=location.getLatitude();
 //            longitude=location.getLatitude();
 //        }
-         longitude=location.getLongitude();
-         latitude=location.getLatitude();
+            longitude=location.getLongitude();
+            latitude=location.getLatitude();
 
 
-        Log.d("LOg","LOng="+longitude+"Latitude"+latitude);
-        CityNameGet=getcityname(longitude,latitude);
-        getWeatherInfo(CityNameGet);
+            Log.d("LOg","LOng="+longitude+"Latitude"+latitude);
+            CityNameGet=getcityname(longitude,latitude);
+            getWeatherInfo(CityNameGet);
+        }
+        else{
+            showAlertMessageLocationDisabled();
+        }
+
+
+
         searchIv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -113,6 +128,30 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    private void showAlertMessageLocationDisabled() {
+        AlertDialog.Builder builder=new AlertDialog.Builder(this);
+        builder.setMessage("Device location is turned off,please turn it on.Do you want to turn on location?");
+        builder.setCancelable(false);
+        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                finish();
+            }
+        });
+        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                dialogInterface.cancel();
+                finish();
+            }
+        });
+        AlertDialog dialog=builder.create();
+        dialog.show();
+
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
@@ -213,4 +252,6 @@ public class MainActivity extends AppCompatActivity {
         });
         requestQueue.add(jsonObjectRequest);
     }
+
+
 }
